@@ -112,7 +112,7 @@ function ProductGenerator({ session, onLogout }) {
       <header className="topbar">
         <div>
           <p className="eyebrow">Signed in as {session.user.name}</p>
-          <h1>AI Auto-Category & Tag Generator</h1>
+          <h1> Auto-Category & Tag Generator</h1>
         </div>
         <button type="button" className="secondary-button" onClick={onLogout}>Log out</button>
       </header>
@@ -125,7 +125,7 @@ function ProductGenerator({ session, onLogout }) {
               <input
                 name="name"
                 type="text"
-                placeholder="Bamboo travel mug"
+                placeholder="type the product name here...."
                 value={formData.name}
                 onChange={handleChange}
                 required
@@ -135,7 +135,7 @@ function ProductGenerator({ session, onLogout }) {
               Description
               <textarea
                 name="description"
-                placeholder="Reusable insulated mug with bamboo fiber shell and spill-proof lid"
+                placeholder="write the product description here...."
                 value={formData.description}
                 onChange={handleChange}
                 required
