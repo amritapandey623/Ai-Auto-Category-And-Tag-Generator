@@ -1,23 +1,48 @@
 package com.moduleone.products.model;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-import java.util.List;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
-@Document(collection = "products")
+import java.util.List;
+import java.util.Map;
+
+@Entity
+@Table(name = "products")
 public class Product {
     @Id
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
     private String name;
+
+    @Column(nullable = false, columnDefinition = "text")
     private String description;
     private String category;       
     private String subCategory;    
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
     private List<String> seoTags;  
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
     private List<String> filters;  
-    public String getId() {
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private Map<String, Object> aiMetadata;
+
+    public Long getId() {
         return id;
     }
-    public void setId(String id) {
+    public void setId(Long id) {
         this.id = id;
     }
     public String getName() {
@@ -56,6 +81,10 @@ public class Product {
     public void setFilters(List<String> filters) {
         this.filters = filters;
     }
-
-    
+    public Map<String, Object> getAiMetadata() {
+        return aiMetadata;
+    }
+    public void setAiMetadata(Map<String, Object> aiMetadata) {
+        this.aiMetadata = aiMetadata;
+    }
 }

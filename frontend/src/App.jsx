@@ -1,73 +1,158 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import './App.css';
+import { apiFetch, clearSession, getSession, saveSession } from './api';
 
-function App() {
-  const [formData, setFormData] = useState({ name: '', description: '' });
-  const [savedProduct, setSavedProduct] = useState(null);
+function AuthForm({ mode, onSwitchMode, onAuthenticated }) {
+  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const isLogin = mode === 'login';
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleChange = (event) => {
+    setFormData({ ...formData, [event.target.name]: event.target.value });
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setLoading(true);
+    setMessage('');
+
     try {
-      const response = await fetch('http://localhost:8080/api/products/generate-and-save', {
+      if (isLogin) {
+        const session = await apiFetch('/api/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({ email: formData.email, password: formData.password }),
+        });
+        saveSession(session);
+        onAuthenticated(session);
+        return;
+      }
+
+      await apiFetch('/api/auth/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-
-      if (!response.ok) throw new Error("Server error");
-
-      const data = await response.json();
-      setSavedProduct(data);
-      alert("Success: Product & AI Metadata Stored!");
-    } catch (err) {
-      console.error("Error:", err);
-      alert("Backend Connection Failed. Is Spring Boot running on port 8080?");
+      setMessage('Registration successful. You can log in now.');
+      onSwitchMode('login');
+    } catch (error) {
+      setMessage(error.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="container">
-     
-
-      <main className="content">
-        {  }
-        <div className="card form-card">
-          <form onSubmit={handleSubmit}>
-            <div className="input-group">
-              <label>Product Name</label>
-              <input 
-                type="text"
-                placeholder="Enter Product Name" 
-                onChange={e => setFormData({...formData, name: e.target.value})} 
-                required 
-              />
-            </div>
-            <div className="input-group">
-              <label>Description</label>
-              <textarea 
-                placeholder="Enter description for AI analysis..." 
-                onChange={e => setFormData({...formData, description: e.target.value})} 
-                required 
-              />
-            </div>
-            <button type="submit" className="submit-btn" disabled={loading}>
-              {loading ? <span className="loader"></span> : "Analyze & Save to Database"}
-            </button>
-          </form>
+    <main className="auth-shell">
+      <section className="auth-panel">
+        <div>
+          <p className="eyebrow">AI Catalog Assistant</p>
+          <h1>{isLogin ? 'Welcome back' : 'Create your account'}</h1>
         </div>
 
-        { }
+        <form onSubmit={handleSubmit} className="form-stack">
+          {!isLogin && (
+            <label>
+              Name
+              <input name="name" type="text" value={formData.name} onChange={handleChange} required />
+            </label>
+          )}
+          <label>
+            Email
+            <input name="email" type="email" value={formData.email} onChange={handleChange} required />
+          </label>
+          <label>
+            Password
+            <input name="password" type="password" value={formData.password} onChange={handleChange} minLength={8} required />
+          </label>
+          {message && <p className="notice">{message}</p>}
+          <button type="submit" disabled={loading}>
+            {loading ? 'Please wait...' : isLogin ? 'Log in' : 'Register'}
+          </button>
+        </form>
+
+        <button className="link-button" type="button" onClick={() => onSwitchMode(isLogin ? 'register' : 'login')}>
+          {isLogin ? 'Need an account? Register' : 'Already registered? Log in'}
+        </button>
+      </section>
+    </main>
+  );
+}
+
+function ProductGenerator({ session, onLogout }) {
+  const [formData, setFormData] = useState({ name: '', description: '' });
+  const [savedProduct, setSavedProduct] = useState(null);
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (event) => {
+    setFormData({ ...formData, [event.target.name]: event.target.value });
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setMessage('');
+
+    try {
+      const product = await apiFetch('/api/products/generate-and-save', {
+        method: 'POST',
+        body: JSON.stringify(formData),
+      });
+      setSavedProduct(product);
+      setMessage('Product metadata generated and stored in PostgreSQL.');
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="app-shell">
+      <header className="topbar">
+        <div>
+          <p className="eyebrow">Signed in as {session.user.name}</p>
+          <h1>AI Auto-Category & Tag Generator</h1>
+        </div>
+        <button type="button" className="secondary-button" onClick={onLogout}>Log out</button>
+      </header>
+
+      <main className="workspace">
+        <section className="card form-card">
+          <form onSubmit={handleSubmit} className="form-stack">
+            <label>
+              Product Name
+              <input
+                name="name"
+                type="text"
+                placeholder="Bamboo travel mug"
+                value={formData.name}
+                onChange={handleChange}
+                required
+              />
+            </label>
+            <label>
+              Description
+              <textarea
+                name="description"
+                placeholder="Reusable insulated mug with bamboo fiber shell and spill-proof lid"
+                value={formData.description}
+                onChange={handleChange}
+                required
+              />
+            </label>
+            <button type="submit" disabled={loading}>
+              {loading ? 'Analyzing...' : 'Analyze & Save'}
+            </button>
+          </form>
+          {message && <p className="notice">{message}</p>}
+        </section>
+
         {savedProduct && (
-          <div className="card result-card">
-            <div className="result-header">
-              <span className="db-badge">Stored in MongoDB</span>
-              <h2>AI Generation Result</h2>
-            </div>
-            
+          <section className="card result-card">
+            <span className="db-badge">Stored in Neon PostgreSQL</span>
+            <h2>Structured JSON Output</h2>
+
             <div className="metadata-grid">
               <div className="info-item">
                 <small>Primary Category</small>
@@ -79,28 +164,45 @@ function App() {
               </div>
             </div>
 
-            <div className="tag-section">
-              <strong>SEO Keywords:</strong>
-              <div className="tag-cloud">
-                {savedProduct.seoTags?.map((tag, i) => (
-                  <span key={i} className="tag-pill">{tag}</span>
-                ))}
-              </div>
-            </div>
+            <TagList title="SEO Tags" items={savedProduct.seoTags} variant="tag-pill" />
+            <TagList title="Sustainability Filters" items={savedProduct.filters} variant="filter-pill" />
 
-            <div className="tag-section">
-              <strong>Sustainability Filters:</strong>
-              <div className="tag-cloud">
-                {savedProduct.filters?.map((f, i) => (
-                  <span key={i} className="filter-pill">{f}</span>
-                ))}
-              </div>
-            </div>
-          </div>
+            <pre>{JSON.stringify(savedProduct.aiMetadata, null, 2)}</pre>
+          </section>
         )}
       </main>
     </div>
   );
+}
+
+function TagList({ title, items = [], variant }) {
+  return (
+    <div className="tag-section">
+      <strong>{title}</strong>
+      <div className="tag-cloud">
+        {items.map((item) => (
+          <span key={item} className={variant}>{item}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [session, setSession] = useState(getSession());
+  const [authMode, setAuthMode] = useState('login');
+
+  const handleLogout = () => {
+    clearSession();
+    setSession(null);
+    setAuthMode('login');
+  };
+
+  if (!session) {
+    return <AuthForm mode={authMode} onSwitchMode={setAuthMode} onAuthenticated={setSession} />;
+  }
+
+  return <ProductGenerator session={session} onLogout={handleLogout} />;
 }
 
 export default App;

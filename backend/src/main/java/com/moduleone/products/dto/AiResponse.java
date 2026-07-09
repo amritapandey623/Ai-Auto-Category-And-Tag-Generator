@@ -1,15 +1,12 @@
 package com.moduleone.products.dto;
+
 import java.util.List;
 
 public class AiResponse {
-   
-
     private String category;
     private String subCategory;
     private List<String> seoTags;
     private List<String> filters;
-
-
 
     public String getCategory() {
         return category;
@@ -34,6 +31,5 @@ public class AiResponse {
     }
     public void setFilters(List<String> filters) {
         this.filters = filters;
-
-}
+    }
 }
